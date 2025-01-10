@@ -1,5 +1,5 @@
 name: notes_to_go
-description: "A new Flutter project."
+description: "notes to go"
 publish_to: 'none'
 version: 0.1.0
 
@@ -7,6 +7,7 @@ environment:
   sdk: ^3.5.3
 
 dependencies:
+  cupertino_icons: ^1.0.8
   flutter:
     sdk: flutter
   hive: ^2.2.3

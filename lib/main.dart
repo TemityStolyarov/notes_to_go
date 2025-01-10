@@ -1,302 +1,300 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
   await Hive.initFlutter();
-  await Hive.openBox('tasks');
-  runApp(const NotesApp());
+  Hive.registerAdapter(TaskAdapter());
+  await Hive.openBox<Task>('tasks');
+
+  runApp(NoteApp());
 }
 
-class NotesApp extends StatelessWidget {
-  const NotesApp({super.key});
+class Task extends HiveObject {
+  @HiveField(0)
+  String title;
+
+  @HiveField(1)
+  DateTime createdAt;
+
+  @HiveField(2)
+  DateTime? deadline;
+
+  @HiveField(3)
+  bool isCompleted;
+
+  Task({
+    required this.title,
+    required this.createdAt,
+    this.deadline,
+    this.isCompleted = false,
+  });
+}
+
+class TaskAdapter extends TypeAdapter<Task> {
+  @override
+  final int typeId = 0;
 
   @override
+  Task read(BinaryReader reader) {
+    return Task(
+      title: reader.readString(),
+      createdAt: DateTime.parse(reader.readString()),
+      deadline: reader.readBool() ? DateTime.parse(reader.readString()) : null,
+      isCompleted: reader.readBool(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Task obj) {
+    writer.writeString(obj.title);
+    writer.writeString(obj.createdAt.toIso8601String());
+    writer.writeBool(obj.deadline != null);
+    if (obj.deadline != null) {
+      writer.writeString(obj.deadline!.toIso8601String());
+    }
+    writer.writeBool(obj.isCompleted);
+  }
+}
+
+class NoteApp extends StatelessWidget {
+  @override
   Widget build(BuildContext context) {
-    return const CupertinoApp(
-      title: 'Заметки',
+    return CupertinoApp(
       theme: CupertinoThemeData(
-        brightness: Brightness.light,
+        brightness: Brightness.dark,
         primaryColor: CupertinoColors.activeOrange,
       ),
-      home: NotesHomePage(),
+      home: NoteTabs(),
     );
   }
 }
 
-class NotesHomePage extends StatefulWidget {
-  const NotesHomePage({super.key});
-
+class NoteTabs extends StatefulWidget {
   @override
-  _NotesHomePageState createState() => _NotesHomePageState();
+  _NoteTabsState createState() => _NoteTabsState();
 }
 
-class _NotesHomePageState extends State<NotesHomePage> {
-  final List<Widget> _tabs = [
-    const TodayTasksTab(),
-    const AllTasksTab(),
-    const ArchiveTasksTab(),
-  ];
-  int _currentIndex = 0;
-
+class _NoteTabsState extends State<NoteTabs> {
   @override
   Widget build(BuildContext context) {
     return CupertinoTabScaffold(
       tabBar: CupertinoTabBar(
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.calendar_today),
-            label: 'Ближайшие',
-          ),
+              icon: Icon(CupertinoIcons.calendar_today), label: 'Сегодня'),
           BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.list_bullet),
-            label: 'Все задачи',
-          ),
+              icon: Icon(CupertinoIcons.list_bullet), label: 'Все задачи'),
           BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.archivebox),
-            label: 'Архив',
-          ),
+              icon: Icon(CupertinoIcons.archivebox), label: 'Архив'),
         ],
       ),
       tabBuilder: (context, index) {
-        return CupertinoPageScaffold(
-          navigationBar: CupertinoNavigationBar(
-            middle: Text([
-              _tabs[index] is TodayTasksTab
-                  ? _getCurrentDayLabel()
-                  : ['Ближайшие', 'Все задачи', 'Архив'][index]
-            ][0]),
-          ),
-          child: Stack(
-            children: [
-              _tabs[index],
-              if (index == 0)
-                Positioned(
-                  bottom: 16,
-                  right: 16,
-                  child: CupertinoButton(
-                    child: const Icon(CupertinoIcons.add, size: 32),
-                    color: CupertinoColors.activeOrange,
-                    onPressed: () => _showAddTaskDialog(context),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  String _getCurrentDayLabel() {
-    final today = DateTime.now();
-    final currentTab = (_tabs[_currentIndex] as TodayTasksTab)._currentDate;
-
-    if (currentTab.year == today.year &&
-        currentTab.month == today.month &&
-        currentTab.day == today.day) {
-      return 'Сегодня';
-    } else if (currentTab.isBefore(today)) {
-      return 'Вчера';
-    } else {
-      return 'Завтра';
-    }
-  }
-
-  void _showAddTaskDialog(BuildContext context) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) {
-        TextEditingController controller = TextEditingController();
-        return CupertinoAlertDialog(
-          title: const Text('Новая задача'),
-          content: CupertinoTextField(
-            controller: controller,
-            placeholder: 'Введите текст задачи',
-          ),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('Отмена'),
-              onPressed: () => Navigator.pop(context),
-            ),
-            CupertinoDialogAction(
-              child: const Text('Добавить'),
-              onPressed: () {
-                if (controller.text.isNotEmpty) {
-                  Hive.box('tasks').add({
-                    'title': controller.text,
-                    'date': DateTime.now().toIso8601String(),
-                    'completed': false,
-                    'archived': false,
-                  });
-                  Navigator.pop(context);
-                  setState(() {});
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class TodayTasksTab extends StatefulWidget {
-  const TodayTasksTab({super.key});
-
-  DateTime get _currentDate => DateTime.now();
-
-  @override
-  _TodayTasksTabState createState() => _TodayTasksTabState();
-}
-
-class _TodayTasksTabState extends State<TodayTasksTab> {
-  DateTime _currentDate = DateTime.now();
-
-  void _swipeLeft() {
-    setState(() {
-      _currentDate = _currentDate.add(const Duration(days: 1));
-    });
-  }
-
-  void _swipeRight() {
-    setState(() {
-      _currentDate = _currentDate.subtract(const Duration(days: 1));
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tasksBox = Hive.box('tasks');
-    final tasks = tasksBox.values.where((task) {
-      final taskDate = DateTime.parse(task['date']);
-      return taskDate.year == _currentDate.year &&
-          taskDate.month == _currentDate.month &&
-          taskDate.day == _currentDate.day;
-    }).toList();
-
-    return GestureDetector(
-      onHorizontalDragEnd: (details) {
-        if (details.primaryVelocity! < 0) {
-          _swipeLeft();
-        } else if (details.primaryVelocity! > 0) {
-          _swipeRight();
+        switch (index) {
+          case 0:
+            return TaskPage(
+              title: 'Сегодня',
+              filter: (task) =>
+                  task.createdAt.day == DateTime.now().day && !task.isCompleted,
+              emptyMessage: 'Нет задач на сегодня.',
+            );
+          case 1:
+            return TaskPage(
+              title: 'Все задачи',
+              filter: (task) => !task.isCompleted,
+              emptyMessage: 'Список задач пуст.',
+            );
+          case 2:
+            return TaskPage(
+              title: 'Архив',
+              filter: (task) => task.isCompleted,
+              emptyMessage: 'Архив пуст.',
+            );
+          default:
+            return Container();
         }
       },
-      child: ListView.builder(
-        itemCount: tasks.length,
-        itemBuilder: (context, index) {
-          final task = tasks[index];
-          return TaskItem(
-            title: task['title'],
-            completed: task['completed'],
-            onChanged: (value) {
-              tasksBox.putAt(index, {
-                'title': task['title'],
-                'date': task['date'],
-                'completed': value,
-              });
-              setState(() {});
-            },
-          );
-        },
-      ),
     );
   }
 }
 
-class AllTasksTab extends StatelessWidget {
-  const AllTasksTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final tasksBox = Hive.box('tasks');
-    final tasks = tasksBox.values.toList();
-
-    return ListView.builder(
-      itemCount: tasks.length,
-      itemBuilder: (context, index) {
-        final task = tasks[index];
-        return TaskItem(
-          title: task['title'],
-          completed: task['completed'],
-          onChanged: (value) {
-            tasksBox.putAt(index, {
-              'title': task['title'],
-              'date': task['date'],
-              'completed': value,
-            });
-          },
-        );
-      },
-    );
-  }
-}
-
-class ArchiveTasksTab extends StatelessWidget {
-  const ArchiveTasksTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final tasksBox = Hive.box('tasks');
-    final archivedTasks =
-        tasksBox.values.where((task) => task['archived']).toList();
-
-    return ListView.builder(
-      itemCount: archivedTasks.length,
-      itemBuilder: (context, index) {
-        final task = archivedTasks[index];
-        return TaskItem(
-          title: task['title'],
-          completed: true,
-          onChanged: null,
-        );
-      },
-    );
-  }
-}
-
-class TaskItem extends StatelessWidget {
+class TaskPage extends StatelessWidget {
   final String title;
-  final bool completed;
-  final ValueChanged<bool>? onChanged;
+  final bool Function(Task) filter;
+  final String emptyMessage;
 
-  const TaskItem({
-    super.key,
+  TaskPage({
     required this.title,
-    required this.completed,
-    this.onChanged,
+    required this.filter,
+    required this.emptyMessage,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: CupertinoColors.separator, width: 0.5),
-        ),
+    final Box<Task> taskBox = Hive.box<Task>('tasks');
+
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(title),
       ),
-      child: Row(
-        children: [
-          CupertinoSwitch(
-            value: completed,
-            onChanged: onChanged,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                decoration: completed ? TextDecoration.lineThrough : null,
-                color: completed
-                    ? CupertinoColors.inactiveGray
-                    : CupertinoColors.label,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ],
+      child: SafeArea(
+        child: ValueListenableBuilder(
+          valueListenable: taskBox.listenable(),
+          builder: (context, Box<Task> box, _) {
+            final tasks = box.values.where(filter).toList();
+
+            if (tasks.isEmpty) {
+              return Center(
+                child: Text(
+                  emptyMessage,
+                  style: TextStyle(
+                      color: CupertinoColors.systemGrey, fontSize: 18),
+                ),
+              );
+            }
+
+            return Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: tasks.length,
+                    itemBuilder: (context, index) {
+                      final task = tasks[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8.0, horizontal: 16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  task.title,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    decoration: task.isCompleted
+                                        ? TextDecoration.lineThrough
+                                        : TextDecoration.none,
+                                    color: task.isCompleted
+                                        ? CupertinoColors.systemGrey
+                                        : CupertinoColors.white,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Дата создания: ${task.createdAt}',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      color: CupertinoColors.systemGrey),
+                                ),
+                                if (task.deadline != null)
+                                  Text(
+                                    'Дедлайн: ${task.deadline}',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color: CupertinoColors.systemGrey),
+                                  ),
+                              ],
+                            ),
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              child: Icon(
+                                task.isCompleted
+                                    ? CupertinoIcons.check_mark_circled_solid
+                                    : CupertinoIcons.check_mark_circled,
+                                color: task.isCompleted
+                                    ? CupertinoColors.activeGreen
+                                    : CupertinoColors.inactiveGray,
+                              ),
+                              onPressed: () {
+                                task.isCompleted = !task.isCompleted;
+                                task.save();
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    showCupertinoDialog(
+                      context: context,
+                      builder: (context) {
+                        String newTaskTitle = '';
+                        DateTime? deadline;
+
+                        return CupertinoAlertDialog(
+                          title: Text('Добавить задачу'),
+                          content: Column(
+                            children: [
+                              CupertinoTextField(
+                                placeholder: 'Введите текст задачи',
+                                onChanged: (value) {
+                                  newTaskTitle = value;
+                                },
+                              ),
+                              CupertinoButton(
+                                child: Text('Указать дедлайн'),
+                                onPressed: () async {
+                                  deadline =
+                                      await showCupertinoModalPopup<DateTime>(
+                                    context: context,
+                                    builder: (context) {
+                                      return Container(); // Реализация выбора даты
+                                    },
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            CupertinoDialogAction(
+                              child: Text('Отмена'),
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                            ),
+                            CupertinoDialogAction(
+                              child: Text('Добавить'),
+                              onPressed: () {
+                                if (newTaskTitle.isNotEmpty) {
+                                  taskBox.add(Task(
+                                    title: newTaskTitle,
+                                    createdAt: DateTime.now(),
+                                    deadline: deadline,
+                                  ));
+                                }
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(CupertinoIcons.add,
+                          color: CupertinoColors.activeOrange),
+                      SizedBox(width: 8),
+                      Text(
+                        'Добавить',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: CupertinoColors.activeOrange,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
