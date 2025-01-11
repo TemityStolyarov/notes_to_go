@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:notes_to_go/widgets/task_page.dart';
+import 'package:notes_to_go/pages/task_page/task_page.dart';
 
 class NoteTabs extends StatefulWidget {
   const NoteTabs({super.key});

@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:notes_to_go/data/task_adapter.dart';
-import 'package:notes_to_go/widgets/note_tabs.dart';
+import 'package:notes_to_go/pages/task_page/widgets/note_tabs.dart';
 
 void main() async {
   await Hive.initFlutter();
