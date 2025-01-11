@@ -7,7 +7,7 @@ void main() async {
   Hive.registerAdapter(TaskAdapter());
   await Hive.openBox<Task>('tasks');
 
-  runApp(NoteApp());
+  runApp(const NoteApp());
 }
 
 class Task extends HiveObject {
@@ -58,9 +58,11 @@ class TaskAdapter extends TypeAdapter<Task> {
 }
 
 class NoteApp extends StatelessWidget {
+  const NoteApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return CupertinoApp(
+    return const CupertinoApp(
       theme: CupertinoThemeData(
         brightness: Brightness.dark,
         primaryColor: CupertinoColors.activeOrange,
@@ -71,6 +73,8 @@ class NoteApp extends StatelessWidget {
 }
 
 class NoteTabs extends StatefulWidget {
+  const NoteTabs({super.key});
+
   @override
   _NoteTabsState createState() => _NoteTabsState();
 }
@@ -80,7 +84,7 @@ class _NoteTabsState extends State<NoteTabs> {
   Widget build(BuildContext context) {
     return CupertinoTabScaffold(
       tabBar: CupertinoTabBar(
-        items: [
+        items: const [
           BottomNavigationBarItem(
               icon: Icon(CupertinoIcons.calendar_today), label: 'Сегодня'),
           BottomNavigationBarItem(
@@ -123,7 +127,8 @@ class TaskPage extends StatelessWidget {
   final bool Function(Task) filter;
   final String emptyMessage;
 
-  TaskPage({
+  const TaskPage({
+    super.key,
     required this.title,
     required this.filter,
     required this.emptyMessage,
@@ -147,7 +152,7 @@ class TaskPage extends StatelessWidget {
               return Center(
                 child: Text(
                   emptyMessage,
-                  style: TextStyle(
+                  style: const TextStyle(
                       color: CupertinoColors.systemGrey, fontSize: 18),
                 ),
               );
@@ -160,59 +165,80 @@ class TaskPage extends StatelessWidget {
                     itemCount: tasks.length,
                     itemBuilder: (context, index) {
                       final task = tasks[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8.0, horizontal: 16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  task.title,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    decoration: task.isCompleted
-                                        ? TextDecoration.lineThrough
-                                        : TextDecoration.none,
-                                    color: task.isCompleted
-                                        ? CupertinoColors.systemGrey
-                                        : CupertinoColors.white,
-                                  ),
+                      return Dismissible(
+                        key: Key(task.key.toString()),
+                        direction: DismissDirection.endToStart,
+                        onDismissed: (_) {
+                          task.delete();
+                        },
+                        background: Container(
+                          color: CupertinoColors.systemRed,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 16.0),
+                          child: const Icon(
+                            CupertinoIcons.delete,
+                            color: CupertinoColors.white,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 8.0,
+                            horizontal: 16.0,
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              CupertinoButton(
+                                padding: EdgeInsets.zero,
+                                child: Icon(
+                                  task.isCompleted
+                                      ? CupertinoIcons.check_mark_circled_solid
+                                      : CupertinoIcons.check_mark_circled,
+                                  color: task.isCompleted
+                                      ? CupertinoColors.activeGreen
+                                      : CupertinoColors.inactiveGray,
                                 ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Дата создания: ${task.createdAt}',
-                                  style: TextStyle(
-                                      fontSize: 14,
-                                      color: CupertinoColors.systemGrey),
-                                ),
-                                if (task.deadline != null)
-                                  Text(
-                                    'Дедлайн: ${task.deadline}',
-                                    style: TextStyle(
-                                        fontSize: 14,
-                                        color: CupertinoColors.systemGrey),
-                                  ),
-                              ],
-                            ),
-                            CupertinoButton(
-                              padding: EdgeInsets.zero,
-                              child: Icon(
-                                task.isCompleted
-                                    ? CupertinoIcons.check_mark_circled_solid
-                                    : CupertinoIcons.check_mark_circled,
-                                color: task.isCompleted
-                                    ? CupertinoColors.activeGreen
-                                    : CupertinoColors.inactiveGray,
+                                onPressed: () {
+                                  task.isCompleted = !task.isCompleted;
+                                  task.save();
+                                },
                               ),
-                              onPressed: () {
-                                task.isCompleted = !task.isCompleted;
-                                task.save();
-                              },
-                            ),
-                          ],
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      task.title,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        decoration: task.isCompleted
+                                            ? TextDecoration.lineThrough
+                                            : TextDecoration.none,
+                                        color: task.isCompleted
+                                            ? CupertinoColors.systemGrey
+                                            : CupertinoColors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Дата создания: ${task.createdAt}',
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          color: CupertinoColors.systemGrey),
+                                    ),
+                                    if (task.deadline != null)
+                                      Text(
+                                        'Дедлайн: ${task.deadline}',
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            color: CupertinoColors.systemGrey),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -227,7 +253,7 @@ class TaskPage extends StatelessWidget {
                         DateTime? deadline;
 
                         return CupertinoAlertDialog(
-                          title: Text('Добавить задачу'),
+                          title: const Text('Добавить задачу'),
                           content: Column(
                             children: [
                               CupertinoTextField(
@@ -237,7 +263,7 @@ class TaskPage extends StatelessWidget {
                                 },
                               ),
                               CupertinoButton(
-                                child: Text('Указать дедлайн'),
+                                child: const Text('Указать дедлайн'),
                                 onPressed: () async {
                                   deadline =
                                       await showCupertinoModalPopup<DateTime>(
@@ -252,13 +278,13 @@ class TaskPage extends StatelessWidget {
                           ),
                           actions: [
                             CupertinoDialogAction(
-                              child: Text('Отмена'),
+                              child: const Text('Отмена'),
                               onPressed: () {
                                 Navigator.pop(context);
                               },
                             ),
                             CupertinoDialogAction(
-                              child: Text('Добавить'),
+                              child: const Text('Добавить'),
                               onPressed: () {
                                 if (newTaskTitle.isNotEmpty) {
                                   taskBox.add(Task(
@@ -275,7 +301,7 @@ class TaskPage extends StatelessWidget {
                       },
                     );
                   },
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(CupertinoIcons.add,

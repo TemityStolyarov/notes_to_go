@@ -1,6 +1,6 @@
 ## 0.2.0
 
-*
+* swipe delete implemented
 
 ## 0.1.0
 
