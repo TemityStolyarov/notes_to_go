@@ -149,12 +149,91 @@ class TaskPage extends StatelessWidget {
             final tasks = box.values.where(filter).toList();
 
             if (tasks.isEmpty) {
-              return Center(
-                child: Text(
-                  emptyMessage,
-                  style: const TextStyle(
-                      color: CupertinoColors.systemGrey, fontSize: 18),
-                ),
+              return Column(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        emptyMessage,
+                        style: const TextStyle(
+                            color: CupertinoColors.systemGrey, fontSize: 18),
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      showCupertinoDialog(
+                        context: context,
+                        builder: (context) {
+                          String newTaskTitle = '';
+                          DateTime? deadline;
+
+                          return CupertinoAlertDialog(
+                            title: const Text('Добавить задачу'),
+                            content: Column(
+                              children: [
+                                CupertinoTextField(
+                                  placeholder: 'Введите текст задачи',
+                                  onChanged: (value) {
+                                    newTaskTitle = value;
+                                  },
+                                ),
+                                CupertinoButton(
+                                  child: const Text('Указать дедлайн'),
+                                  onPressed: () async {
+                                    deadline =
+                                        await showCupertinoModalPopup<DateTime>(
+                                      context: context,
+                                      builder: (context) {
+                                        return Container(); // Реализация выбора даты
+                                      },
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                            actions: [
+                              CupertinoDialogAction(
+                                child: const Text('Отмена'),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                              ),
+                              CupertinoDialogAction(
+                                child: const Text('Добавить'),
+                                onPressed: () {
+                                  if (newTaskTitle.isNotEmpty) {
+                                    taskBox.add(Task(
+                                      title: newTaskTitle,
+                                      createdAt: DateTime.now(),
+                                      deadline: deadline,
+                                    ));
+                                  }
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(CupertinoIcons.add,
+                            color: CupertinoColors.activeOrange),
+                        SizedBox(width: 8),
+                        Text(
+                          'Добавить',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: CupertinoColors.activeOrange,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               );
             }
 
