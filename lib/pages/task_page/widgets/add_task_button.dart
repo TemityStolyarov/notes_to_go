@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:notes_to_go/data/task_adapter.dart';
 
@@ -9,11 +10,12 @@ class AddTaskButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final Box<Task> taskBox = Hive.box<Task>('tasks');
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
           onTap: () {
             showCupertinoDialog(
               context: context,
@@ -71,23 +73,35 @@ class AddTaskButton extends StatelessWidget {
               },
             );
           },
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Icon(
-                CupertinoIcons.add,
-                color: CupertinoColors.activeOrange,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.65),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: 8,
+                horizontal: 12,
               ),
-              SizedBox(width: 8),
-              Text(
-                'Добавить',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: CupertinoColors.activeOrange,
-                ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Icon(
+                    CupertinoIcons.add,
+                    color: CupertinoColors.activeOrange,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Добавить',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: CupertinoColors.activeOrange,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
