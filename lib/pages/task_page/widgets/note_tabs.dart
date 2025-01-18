@@ -38,13 +38,24 @@ class _NoteTabsState extends State<NoteTabs> {
         ],
       ),
       tabBuilder: (context, index) {
+        final now = DateTime.now();
+
+        bool isToday(DateTime date) =>
+            date.year == now.year &&
+            date.month == now.month &&
+            date.day == now.day;
+
         switch (index) {
           case 0:
             return TaskPage(
               title: 'Ближайшие',
               filter: (task) =>
-                  (task.deadline?.day == DateTime.now().day) &&
-                  !task.isCompleted,
+                  (task.deadline != null &&
+                      !task.isCompleted &&
+                      isToday(task.deadline!)) ||
+                  (task.deadline == null &&
+                      !task.isCompleted &&
+                      isToday(task.createdAt)),
               emptyMessage: 'Нет задач на сегодня.',
             );
           case 1:

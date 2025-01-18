@@ -97,6 +97,7 @@ class _AddTaskButtonState extends State<AddTaskButton> {
                   child: Column(
                     children: [
                       CupertinoTextField(
+                        autofocus: true,
                         placeholder: 'Название задачи',
                         onChanged: (value) {
                           newTaskTitle = value;
@@ -213,6 +214,9 @@ class _AddTaskButtonState extends State<AddTaskButton> {
                             ),
                           );
                         }
+                        setState(() {
+                          deadline = null;
+                        });
                         Navigator.pop(context);
                       },
                     ),
