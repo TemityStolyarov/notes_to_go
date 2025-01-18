@@ -5,7 +5,7 @@ class NoteTabs extends StatefulWidget {
   const NoteTabs({super.key});
 
   @override
-  _NoteTabsState createState() => _NoteTabsState();
+  State<NoteTabs> createState() => _NoteTabsState();
 }
 
 class _NoteTabsState extends State<NoteTabs> {
@@ -43,7 +43,8 @@ class _NoteTabsState extends State<NoteTabs> {
             return TaskPage(
               title: 'Ближайшие',
               filter: (task) =>
-                  task.createdAt.day == DateTime.now().day && !task.isCompleted,
+                  (task.deadline?.day == DateTime.now().day) &&
+                  !task.isCompleted,
               emptyMessage: 'Нет задач на сегодня.',
             );
           case 1:
